@@ -609,16 +609,47 @@ function getUrlParam(nome) {
 var userId    = getUrlParam('userId');
 var nickname  = getUrlParam('nickname');
 var webAppUrl = getUrlParam('webAppUrl');
+var mlCode    = getUrlParam('code');
 
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbx6p6jM8-lxQDfEiXFW80mWIZhu1FmmzqpWlTZJYk2XBFWroCy2aIHtrNZqKKsp9Q4H/exec';
 
-// Se não tiver userId, mostra tela de login embutida
-if (!userId) {
+// Se veio com ?code= é o callback do ML — troca pelo token via GAS
+if (mlCode && !userId) {
+  document.getElementById('loginScreen').classList.add('visible');
+  document.getElementById('loginScreen').innerHTML =
+    '<div style="text-align:center;padding:60px;font-family:sans-serif;color:#999">'
+    + '<div style="font-size:32px;margin-bottom:16px">⏳</div>'
+    + '<p>Conectando sua conta...</p></div>';
+
+  fetch(GAS_URL + '?action=trocarCode&code=' + encodeURIComponent(mlCode))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.userId) {
+        // Limpa o code da URL e recarrega com userId
+        var novaUrl = 'https://kookiexd.github.io/startnow/?userId=' + encodeURIComponent(d.userId)
+          + '&nickname=' + encodeURIComponent(d.nickname)
+          + '&webAppUrl=' + encodeURIComponent(GAS_URL);
+        window.location.replace(novaUrl);
+      } else {
+        document.getElementById('loginScreen').innerHTML =
+          '<div style="text-align:center;padding:60px;font-family:sans-serif;color:#ef4444">'
+          + '<p>❌ Erro ao conectar: ' + (d.erro || 'tente novamente') + '</p>'
+          + '<br><a href="https://kookiexd.github.io/startnow/" style="color:#FF6B00">Voltar</a></div>';
+      }
+    })
+    .catch(function(){
+      document.getElementById('loginScreen').innerHTML =
+        '<div style="text-align:center;padding:60px;font-family:sans-serif;color:#ef4444">'
+        + '<p>❌ Erro de conexão. <a href="https://kookiexd.github.io/startnow/" style="color:#FF6B00">Tentar novamente</a></p></div>';
+    });
+
+// Se não tem userId nem code — mostra tela de login
+} else if (!userId) {
   document.getElementById('loginScreen').classList.add('visible');
   document.getElementById('btnLogin').onclick = function() {
     var mlUrl = 'https://auth.mercadolivre.com.br/authorization?response_type=code'
       + '&client_id=5502183005860797'
-      + '&redirect_uri=' + encodeURIComponent(GAS_URL);
+      + '&redirect_uri=' + encodeURIComponent('https://kookiexd.github.io/startnow/');
     window.location.href = mlUrl;
   };
 } else {
