@@ -966,16 +966,14 @@ async function getDriveToken() {
 
 // Cria ou reutiliza pasta no Drive
 async function obterOuCriarPasta(nome, parentId, token) {
-  // Busca pasta existente
   var q = encodeURIComponent("name='" + nome.replace(/'/g,"\\'") + "' and '" + parentId + "' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false");
-  var r = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', {
+  var r = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true', {
     headers: {Authorization: 'Bearer ' + token}
   });
   var data = await r.json();
   if (data.files && data.files.length > 0) return data.files[0].id;
 
-  // Cria nova pasta
-  var cr = await fetch('https://www.googleapis.com/drive/v3/files', {
+  var cr = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true', {
     method: 'POST',
     headers: {Authorization: 'Bearer ' + token, 'Content-Type': 'application/json'},
     body: JSON.stringify({name: nome, mimeType: 'application/vnd.google-apps.folder', parents: [parentId]})
@@ -986,7 +984,6 @@ async function obterOuCriarPasta(nome, parentId, token) {
 
 // Upload de uma foto em paralelo
 async function uploadFoto(dataUrl, nomeArquivo, pastaId, token) {
-  // Converte dataUrl para Blob
   var arr = dataUrl.split(',');
   var mime = arr[0].match(/:(.*?);/)[1];
   var bstr = atob(arr[1]);
@@ -994,7 +991,6 @@ async function uploadFoto(dataUrl, nomeArquivo, pastaId, token) {
   for (var i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
   var blob = new Blob([u8arr], {type: mime});
 
-  // Multipart upload
   var boundary = '-------startnow' + Date.now();
   var meta = JSON.stringify({name: nomeArquivo, parents: [pastaId]});
   var body = '--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + meta +
@@ -1008,7 +1004,7 @@ async function uploadFoto(dataUrl, nomeArquivo, pastaId, token) {
   full.set(fileBytes, bodyBytes.length);
   full.set(endBytes,  bodyBytes.length + fileBytes.length);
 
-  await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+  await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true', {
     method: 'POST',
     headers: {
       Authorization: 'Bearer ' + token,
