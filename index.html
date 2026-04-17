@@ -380,9 +380,40 @@
     @media(max-width:400px){
       .dash-grid,.ads-summary { grid-template-columns:1fr; }
     }
+
+    /* ── TELA DE LOGIN ── */
+    .login-screen {
+      display:none; min-height:100vh; align-items:center; justify-content:center;
+      position:fixed; inset:0; background:var(--bg); z-index:999; flex-direction:column;
+    }
+    .login-screen.visible { display:flex; }
+    .login-box { text-align:center; padding:40px 20px; max-width:420px; width:100%; }
+    .login-logo { font-family:'DM Mono',monospace; font-size:22px; font-weight:500; letter-spacing:3px; margin-bottom:6px; }
+    .login-logo span { color:var(--accent); }
+    .login-sub { font-size:12px; color:var(--muted); margin-bottom:36px; }
+    .login-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:32px 28px; }
+    .login-card h2 { font-size:18px; font-weight:500; margin-bottom:10px; }
+    .login-card p { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:24px; }
+    .btn-login { display:block; width:100%; padding:14px; background:var(--accent); color:white; font-size:14px; font-weight:600; font-family:'DM Sans',sans-serif; border:none; border-radius:9px; cursor:pointer; transition:background .2s; }
+    .btn-login:hover { background:#e05e00; }
+    .login-footer { margin-top:20px; color:var(--muted2); font-size:11px; }
   </style>
 </head>
 <body>
+
+<!-- ── TELA DE LOGIN (visível quando não há userId na URL) ── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">START<span>NOW</span></div>
+    <div class="login-sub">Soluções Digitais & Marketing</div>
+    <div class="login-card">
+      <h2>Portal do Cliente</h2>
+      <p>Conecte sua conta do Mercado Livre para cadastrar produtos e solicitar a criação de anúncios.</p>
+      <button class="btn-login" id="btnLogin">🔗 Conectar com Mercado Livre</button>
+    </div>
+    <div class="login-footer">© 2026 StartNow — Todos os direitos reservados</div>
+  </div>
+</div>
 
 <div class="header">
   <div class="logo">START<span>NOW</span></div>
@@ -579,12 +610,21 @@ var userId    = getUrlParam('userId');
 var nickname  = getUrlParam('nickname');
 var webAppUrl = getUrlParam('webAppUrl');
 
-// Se não tiver userId na URL, redireciona para o login
-if (!userId) {
-  window.location.href = 'https://script.google.com/macros/s/AKfycbx6p6jM8-lxQDfEiXFW80mWIZhu1FmmzqpWlTZJYk2XBFWroCy2aIHtrNZqKKsp9Q4H/exec';
-}
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbx6p6jM8-lxQDfEiXFW80mWIZhu1FmmzqpWlTZJYk2XBFWroCy2aIHtrNZqKKsp9Q4H/exec';
 
-document.getElementById('badgeNick').textContent = nickname;
+// Se não tiver userId, mostra tela de login embutida
+if (!userId) {
+  document.getElementById('loginScreen').classList.add('visible');
+  document.getElementById('btnLogin').onclick = function() {
+    var mlUrl = 'https://auth.mercadolivre.com.br/authorization?response_type=code'
+      + '&client_id=5502183005860797'
+      + '&redirect_uri=' + encodeURIComponent(GAS_URL);
+    window.location.href = mlUrl;
+  };
+} else {
+  // Tem userId — mostra o portal normalmente
+  document.getElementById('badgeNick').textContent = nickname;
+}
 
 // ── NAVEGAÇÃO SPA ────────────────────────────────
 var telaAtual = 'dashboard';
